@@ -1,24 +1,20 @@
-const {
-  users,
-  bootcamps
-} = require('../models')
 const db = require('../models')
 const Bootcamp = db.bootcamps
 const User = db.users
 
 // Crear y guardar un nuevo bootcamp
-exports.createBootcamp = (bootcamp) => {
+exports.createBootcamp = (res, req) => {
+  const bootcamp = { ...req.body }
   return Bootcamp.create({
       title: bootcamp.title,
       cue: bootcamp.cue,
       description: bootcamp.description,
     })
     .then(bootcamp => {
-      console.log(`>> Creado el bootcamp: ${JSON.stringify(bootcamp, null, 4)}`)
-      return bootcamp
+      res.status(201).json(bootcamp)
     })
     .catch(err => {
-      console.log(`>> Error al crear el bootcamp: ${err}`)
+      res.status(400).json({ error: `>> Error al crear el bootcamp: ${err.message}` })
     })
 }
 
@@ -49,39 +45,31 @@ exports.addUser = (bootcampId, userId) => {
 
 
 // obtener los bootcamp por id 
-exports.findById = (Id) => {
-  return Bootcamp.findByPk(Id, {
-      include: [{
+exports.findById = (res, req) => {
+  return Bootcamp.findByPk(req.params.id, { include: [{
         model: User,
         as: "users",
         attributes: ["id", "firstName", "lastName"],
-        through: {
-          attributes: [],
-        }
-      }, ],
+        through: { attributes: [], } }, ],
     })
     .then(bootcamp => {
-      return bootcamp
+      res.json(bootcamp);
     })
     .catch(err => {
-      console.log(`>> Error mientras se encontraba el bootcamp: ${err}`)
+      res.status(400).json({ error: `>> Error mientras se encontraba el bootcamp: ${err.message}` });
     })
 }
 
 // obtener todos los Usuarios incluyendo los Bootcamp
-exports.findAll = () => {
-  return Bootcamp.findAll({
-    include: [{
+exports.findAll = (req, res) => {
+  return Bootcamp.findAll({ include: [{ 
       model: User,
       as: "users",
       attributes: ["id", "firstName", "lastName"],
-      through: {
-        attributes: [],
-      }
-    }, ],
+      through: { attributes: [], }}, ],
   }).then(bootcamps => {
-    return bootcamps
+    res.json(bootcamps);
   }).catch((err) => {
-    console.log(">> Error Buscando los Bootcamps: ", err);
+    res.status(400).json({ error: `>> Error Buscando los Bootcamps: ${err.message}` });
   });
 }

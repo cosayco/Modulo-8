@@ -1,64 +1,60 @@
-const {
-  users
-} = require('../models')
 const db = require('../models')
+const jwt = require('jsonwebtoken');
 const User = db.users
 const Bootcamp = db.bootcamps
+const SECRET_KEY = require('../config/auth.config').secret
 
 // Crear y Guardar Usuarios
-exports.createUser = (user) => {
+exports.createUser = (req, res) => {
+  const user = { ...req.body }
   return User.create({
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email
+      email: user.email,
+      password: user.password
     })
     .then(user => {
-      console.log(`>> Se ha creado el usuario: ${JSON.stringify(user, null, 4)}`)
-      return user
+      res.status(201).json(user)
     })
     .catch(err => {
-      console.log(`>> Error al crear el usuario ${err}`)
+      res.status(400).json({ error: `>> Error al crear el usuario ${err.message}` })
     })
 }
 
 // obtener los bootcamp de un usuario
-exports.findUserById = (userId) => {
-  return User.findByPk(userId, {
-      include: [{
+exports.findUserById = (req, res) => {
+  return User.findByPk(req.params.id, { include: [{
         model: Bootcamp,
         as: "bootcamps",
         attributes: ["id", "title"],
-        through: {
-          attributes: [],
-        }
-      }, ],
+        through: { attributes: [], } }, ],
     })
     .then(users => {
-      return users
+      res.json(users);
     })
     .catch(err => {
-      console.log(`>> Error mientras se encontraba los usuarios: ${err}`)
+      res.status(400).json({ error: `>> Error mientras se encontraba los usuarios: ${err.message}` })
     })
 }
 
 // obtener todos los Usuarios incluyendo los bootcamp
-exports.findAll = () => {
-  return User.findAll({
-    include: [{
+exports.findAll = (req, res) => {
+  return User.findAll({ include: [{
       model: Bootcamp,
       as: "bootcamps",
       attributes: ["id", "title"],
-      through: {
-        attributes: [],
-      }
-    }, ],
+      through: { attributes: [], } }, ],
   }).then(users => {
-    return users
-  })
+    res.json(users);
+  }).catch(err => {
+    res.status(400).json({ error: `>>Error al obtener los usuarios: ${err.message}` });
+  });
 }
 
 // Actualizar usuarios
-exports.updateUserById = (userId, fName, lName) => {
+exports.updateUserById = (req, res) => {
+  const userId = req.params.id
+  const { fName, lName } = req.body
   return User.update({
       firstName: fName,
       lastName: lName
@@ -68,26 +64,51 @@ exports.updateUserById = (userId, fName, lName) => {
       }
     })
     .then(user => {
-      console.log(`>> Se ha actualizado el usuario: ${JSON.stringify(user, null, 4)}`)
-      return user
+      res.json(user)
     })
     .catch(err => {
-      console.log(`>> Error mientras se actualizaba el usuario: ${err}`)
+      res.status(400).json({ error: `>> Error mientras se actualizaba el usuario: ${err.message}` })
     })
 }
 
 // Actualizar usuarios
-exports.deleteUserById = (userId) => {
+exports.deleteUserById = (req, res) => {
+  const userId = req.params.id
   return User.destroy({
       where: {
         id: userId
       }
     })
     .then(user => {
-      console.log(`>> Se ha eliminado el usuario: ${JSON.stringify(user, null, 4)}`)
-      return user
+      res.json(user)
     })
     .catch(err => {
-      console.log(`>> Error mientras se eliminaba el usuario: ${err}`)
+      res.status(400).json({ error: `>> Error mientras se eliminaba el usuario: ${err.message}` })
     })
 }
+
+// Validar Ingreso de Usuario
+exports.signUser = (req, res) => {
+    const { email, password } = req.body;
+
+    return User.findOne({ where: { email: email} })
+    .then(user => {
+      if (user.password === password) {
+        const token = jwt.sign(
+          {
+            sub: 1,
+            role: 'admin',
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 3600,
+          },
+          SECRET_KEY,
+          { algorithm: 'HS256' }
+        );
+        return res.json({ token });
+      }
+      return res.status(401).json({ message: 'Credenciales inválidas' });
+    })
+    .catch(err => {
+      res.status(400).json({ error: `>> Error al iniciar sesión: ${err.message}` })
+    });
+  }    
