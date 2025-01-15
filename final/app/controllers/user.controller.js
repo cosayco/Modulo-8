@@ -4,16 +4,12 @@ const bcript = require('bcryptjs');
 const User = db.users;
 const Bootcamp = db.bootcamps;
 const SECRET_KEY = require('../config/auth.config').secret;
-const { verificaCorreo, verificaToken } = require('../middleware');
 
 // Crear y Guardar Usuarios
 exports.createUser = (req, res) => {
   if (!req.body.firstName || !req.body.lastName || !req.body.email || !req.body.password) {
-    res.status(400).json({ error: '>> Faltan datos' })
-    return
+    return res.status(400).json({ error: '>> Faltan datos' })
   }
-
-  verificaCorreo(req, res);
 
   const user = {
     firstName: req.body.firstName,
@@ -24,7 +20,7 @@ exports.createUser = (req, res) => {
 
   return User.create(user)
     .then(user => {
-      res.status(201).json(user)
+      res.json(user)
     })
     .catch(err => {
       res.status(400).json({ error: `>> Error al crear el usuario ${err.message}` })
@@ -33,7 +29,6 @@ exports.createUser = (req, res) => {
 
 // obtener los bootcamp de un usuario
 exports.findUserById = (req, res) => {
-  verificaToken(req, res);
 
   return User.findByPk(req.params.id, { include: [{
         model: Bootcamp,
@@ -47,41 +42,31 @@ exports.findUserById = (req, res) => {
     .catch(err => {
       res.status(400).json({ error: `>> Error mientras se encontraba los usuarios: ${err.message}` })
     })
+
 }
 
 // obtener todos los Usuarios incluyendo los bootcamp
 exports.findAll = (req, res) => {
-  verifyToken(req, res);
 
-  return User.findAll({ include: [{
-      model: Bootcamp,
-      as: "bootcamps",
-      attributes: ["id", "title"],
-      through: { attributes: [], } }, ],
-  }).then(users => {
-    res.json(users);
-  }).catch(err => {
-    res.status(400).json({ error: `>>Error al obtener los usuarios: ${err.message}` });
-  });
+  return User.findAll({ order: [ ["id", "ASC"] ], include: [{ model: Bootcamp, as: "bootcamps", attributes: ["id", "title"], through: { attributes: [], } }, ],})
+    .then(users => {
+      res.json(users);
+    })
+    .catch(err => {
+      res.status(400).json({ error: `>>Error al obtener los usuarios: ${err.message}` });
+    });
+
 }
 
 // Actualizar usuarios
 exports.updateUserById = (req, res) => {
   if (!req.body.firstName || !req.body.lastName) {
-    res.status(400).json({ error: '>> Faltan datos' })
-    return
+    return res.status(400).json({ error: '>> Faltan datos' })
   }
 
   const userId = req.params.id
-  const { firstName, lastName, email } = req.body
-  return User.update({
-      firstName: firstName,
-      lastName: lastName
-    }, {
-      where: {
-        id: userId
-      }
-    })
+  const { firstName, lastName } = req.body
+  return User.update({ firstName: firstName, lastName: lastName }, { where: { id: userId }})
     .then(user => {
       res.json(user)
     })
@@ -93,11 +78,8 @@ exports.updateUserById = (req, res) => {
 // Actualizar usuarios
 exports.deleteUserById = (req, res) => {
   const userId = req.params.id
-  return User.destroy({
-      where: {
-        id: userId
-      }
-    })
+
+  return User.destroy({ where: { id: userId }})
     .then(user => {
       res.json(user)
     })
@@ -109,9 +91,6 @@ exports.deleteUserById = (req, res) => {
 // Validar Ingreso de Usuario
 exports.signUser = (req, res) => {
     const { email, password } = req.body;
-
-    console.log(password)
-    console.log(bcript.hashSync(password))
 
     return User.findOne({ where: { email: email} })
     .then(user => {
@@ -135,4 +114,4 @@ exports.signUser = (req, res) => {
     .catch(err => {
       res.status(400).json({ error: `>> Error al iniciar sesión: ${err.message}` })
     });
-  }    
+}    

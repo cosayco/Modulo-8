@@ -1,4 +1,4 @@
 module.exports = {
-    secret: "tu_frase_secreta"
+    secret: "secreto_modulo_8"
 };
   

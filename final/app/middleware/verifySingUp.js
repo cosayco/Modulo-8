@@ -1,16 +1,15 @@
 const db = require('../models');
-const User = db.users; // Asegúrate de ajustar la ruta a tu modelo de usuario
+const User = db.users;
 
-const verifySignUp = (req, res, next) => {
+const verifySignUp = async (req, res, next) => {
   try {
-    // Verificar si el correo electrónico ya existe en la base de datos
-    const user = User.findOne({ email: req.body.email });
+    const user = await User.findOne({ where: { email: req.body.email }});
     if (user) {
       return res.status(400).json({ message: 'El correo electrónico ya está registrado.' });
     }
     next();
   } catch (error) {
-    res.status(500).json({ message: 'Error en la verificación del correo electrónico.' });
+    return res.status(500).json({ message: 'Error en la verificación del correo electrónico.' });
   }
 };
 
