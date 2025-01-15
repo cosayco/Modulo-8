@@ -1,7 +1,7 @@
-const verifySignUp = require('./verifySignUp');
-const verifyToken = require('./auth');
+const verificaCorreo = require('./verifySingUp');
+const verificaToken = require('./auth');
 
 module.exports = {
-  verifySignUp,
-  verifyToken
+  verificaCorreo,
+  verificaToken
 };

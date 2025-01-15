@@ -4,7 +4,7 @@ const bcript = require('bcryptjs');
 const User = db.users;
 const Bootcamp = db.bootcamps;
 const SECRET_KEY = require('../config/auth.config').secret;
-const { verifysignUp, verifyToken } = require('../middleware');
+const { verificaCorreo, verificaToken } = require('../middleware');
 
 // Crear y Guardar Usuarios
 exports.createUser = (req, res) => {
@@ -12,6 +12,8 @@ exports.createUser = (req, res) => {
     res.status(400).json({ error: '>> Faltan datos' })
     return
   }
+
+  verificaCorreo(req, res);
 
   const user = {
     firstName: req.body.firstName,
@@ -31,7 +33,7 @@ exports.createUser = (req, res) => {
 
 // obtener los bootcamp de un usuario
 exports.findUserById = (req, res) => {
-  verifyToken(req, res);
+  verificaToken(req, res);
 
   return User.findByPk(req.params.id, { include: [{
         model: Bootcamp,
@@ -49,6 +51,8 @@ exports.findUserById = (req, res) => {
 
 // obtener todos los Usuarios incluyendo los bootcamp
 exports.findAll = (req, res) => {
+  verifyToken(req, res);
+
   return User.findAll({ include: [{
       model: Bootcamp,
       as: "bootcamps",
@@ -63,7 +67,7 @@ exports.findAll = (req, res) => {
 
 // Actualizar usuarios
 exports.updateUserById = (req, res) => {
-  if (!req.body.firstName || !req.body.lastName || !req.body.email) {
+  if (!req.body.firstName || !req.body.lastName) {
     res.status(400).json({ error: '>> Faltan datos' })
     return
   }
@@ -72,8 +76,7 @@ exports.updateUserById = (req, res) => {
   const { firstName, lastName, email } = req.body
   return User.update({
       firstName: firstName,
-      lastName: lastName,
-      email: email
+      lastName: lastName
     }, {
       where: {
         id: userId
